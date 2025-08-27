@@ -1,0 +1,66 @@
+# --- Stage 1: builder on Alpine with musl fix ---
+FROM golang:1.21-alpine AS builder
+
+# CGO toolchain
+RUN apk add --no-cache build-base sqlite-dev ca-certificates
+
+WORKDIR /app
+
+# Go deps
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Source
+COPY . .
+
+# Workaround for musl: expose large-file APIs used by sqlite amalgamation
+ENV CGO_CFLAGS="-D_LARGEFILE64_SOURCE"
+# Select which main package to build (e.g., ./cmd/server or ./cmd/cli)
+ARG MAIN_PKG=./cmd/server
+ARG GO_BUILD_TAGS=
+# Build (native arch), CGO enabled
+RUN CGO_ENABLED=1 go build -tags "$GO_BUILD_TAGS" -o /app/lnk $MAIN_PKG
+
+# --- Stage 2: bring in Tailscale binaries ---
+FROM tailscale/tailscale:latest AS ts
+
+# --- Stage 3: final runtime (Alpine) with Tailscale baked in ---
+FROM alpine:3.20
+
+RUN apk add --no-cache \
+      ca-certificates iptables iproute2 tzdata \
+      wget curl procps tini su-exec bash && \
+    update-ca-certificates
+
+# Copy Tailscale binaries
+COPY --from=ts /usr/local/bin/tailscaled /usr/local/bin/tailscaled
+COPY --from=ts /usr/local/bin/tailscale  /usr/local/bin/tailscale
+
+# App binary
+WORKDIR /app
+COPY --from=builder /app/lnk /app/lnk
+
+# Create app user
+RUN addgroup -S appuser && adduser -S -G appuser appuser && \
+    chown -R appuser:appuser /app
+
+# Persist Tailscale state
+RUN mkdir -p /var/lib/tailscale
+VOLUME ["/var/lib/tailscale"]
+
+ENV TS_STATE_DIR=/var/lib/tailscale
+ENV TS_HOSTNAME="myapp"
+ENV TS_EXTRA_ARGS=""
+
+EXPOSE 80
+
+# Healthcheck (adjust port)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
+
+
+# Entrypoint + command
+COPY entrypoint-tailscale.sh /usr/local/bin/entrypoint-tailscale.sh
+RUN chmod +x /usr/local/bin/entrypoint-tailscale.sh
+ENTRYPOINT ["/sbin/tini", "-g", "--", "/usr/local/bin/entrypoint-tailscale.sh"]
+CMD ["/app/lnk"]

@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Link Forwarder</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .container {
+                background: #f5f5f5;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+            }
+            input,
+            button {
+                padding: 10px;
+                margin: 5px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+            button {
+                background: #007bff;
+                color: white;
+                cursor: pointer;
+            }
+            button:hover {
+                background: #0056b3;
+            }
+            .link-item {
+                background: white;
+                padding: 15px;
+                margin: 10px 0;
+                border-radius: 4px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .delete-btn {
+                background: #dc3545;
+                padding: 5px 10px;
+                font-size: 12px;
+            }
+            .delete-btn:hover {
+                background: #c82333;
+            }
+            .shortcode {
+                font-weight: bold;
+                color: #007bff;
+            }
+            .url {
+                color: #666;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Link Forwarder</h1>
+
+        <div class="container">
+            <h2>Add New Link</h2>
+            <form id="addForm">
+                <input
+                    type="text"
+                    id="shortcode"
+                    placeholder="Shortcode (e.g., google)"
+                    required
+                />
+                <input
+                    type="text"
+                    id="url"
+                    placeholder="URL (e.g., www.google.com)"
+                    required
+                />
+                <button type="submit">Add Link</button>
+            </form>
+        </div>
+
+        <div class="container">
+            <h2>Existing Links</h2>
+            <div id="links"></div>
+        </div>
+
+        <script>
+            function loadLinks() {
+                fetch("/api/links")
+                    .then((response) => response.json())
+                    .then((data) => {
+                        const linksDiv = document.getElementById("links");
+                        if (data.success && data.data) {
+                            linksDiv.innerHTML = data.data
+                                .map(
+                                    (link) =>
+                                        '<div class="link-item">' +
+                                        "<div>" +
+                                        '<div class="shortcode">/' +
+                                        link.shortcode +
+                                        "</div>" +
+                                        '<div class="url">' +
+                                        link.url +
+                                        "</div>" +
+                                        "</div>" +
+                                        '<button class="delete-btn" onclick="deleteLink(\'' +
+                                        link.shortcode +
+                                        "')\">Delete</button>" +
+                                        "</div>",
+                                )
+                                .join("");
+                        } else {
+                            linksDiv.innerHTML = "<p>No links found</p>";
+                        }
+                    });
+            }
+
+            function deleteLink(shortcode) {
+                if (confirm("Delete link: " + shortcode + "?")) {
+                    fetch("/api/links/" + shortcode, { method: "DELETE" })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            if (data.success) {
+                                loadLinks();
+                            } else {
+                                alert("Error: " + data.message);
+                            }
+                        });
+                }
+            }
+
+            document
+                .getElementById("addForm")
+                .addEventListener("submit", function (e) {
+                    e.preventDefault();
+                    const shortcode =
+                        document.getElementById("shortcode").value;
+                    const url = document.getElementById("url").value;
+
+                    fetch("/api/links", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ shortcode, url }),
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            if (data.success) {
+                                document.getElementById("shortcode").value = "";
+                                document.getElementById("url").value = "";
+                                loadLinks();
+                            } else {
+                                alert("Error: " + data.message);
+                            }
+                        });
+                });
+
+            // Load links on page load
+            loadLinks();
+        </script>
+    </body>
+</html>
