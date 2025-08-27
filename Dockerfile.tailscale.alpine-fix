@@ -36,9 +36,10 @@ RUN apk add --no-cache \
 COPY --from=ts /usr/local/bin/tailscaled /usr/local/bin/tailscaled
 COPY --from=ts /usr/local/bin/tailscale  /usr/local/bin/tailscale
 
-# App binary
+# App binary and templates
 WORKDIR /app
 COPY --from=builder /app/lnk /app/lnk
+COPY --from=builder /app/cmd/server/templates /app/templates
 
 # Create app user
 RUN addgroup -S appuser && adduser -S -G appuser appuser && \

@@ -13,10 +13,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy source code
-COPY main.go ./
+COPY . .
 
 # Build the application
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o lnk main.go
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o lnk ./cmd/server
 
 # Final stage
 FROM alpine:latest
@@ -30,8 +30,9 @@ RUN adduser -D -s /bin/sh appuser
 # Set working directory
 WORKDIR /app
 
-# Copy binary from builder
+# Copy binary and templates from builder
 COPY --from=builder /app/lnk .
+COPY --from=builder /app/cmd/server/templates ./templates
 
 # Create data directory
 RUN mkdir -p .crush && chown appuser:appuser .crush
@@ -47,7 +48,7 @@ ENV PORT=8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
 
 # Run the application
 CMD ["./lnk"]
