@@ -77,6 +77,38 @@
             body.dark-mode .url {
                 color: #ccc;
             }
+            .edit-btn {
+                background: #ffc107;
+                padding: 5px 10px;
+                font-size: 12px;
+                margin-right: 5px;
+            }
+            .edit-btn:hover {
+                background: #e0a800;
+            }
+            body.dark-mode .edit-btn {
+                background: #ffc107;
+            }
+            body.dark-mode .edit-btn:hover {
+                background: #e0a800;
+            }
+            .form-actions {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+            .cancel-btn {
+                background: #6c757d;
+                color: white;
+                padding: 10px;
+                margin: 5px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .cancel-btn:hover {
+                background: #5a6268;
+            }
             input,
             button {
                 padding: 10px;
@@ -156,7 +188,17 @@
                     placeholder="URL (e.g., www.google.com)"
                     required
                 />
-                <button type="submit">Add Link</button>
+                <div class="form-actions">
+                    <button type="submit" id="saveBtn">Add Link</button>
+                    <button
+                        type="button"
+                        id="cancelBtn"
+                        class="cancel-btn"
+                        style="display: none"
+                    >
+                        Cancel
+                    </button>
+                </div>
             </form>
         </div>
 
@@ -184,9 +226,18 @@
                                         link.url +
                                         "</div>" +
                                         "</div>" +
+                                        "<div>" +
+                                        '<button class="edit-btn" onclick="editLink(\'' +
+                                        link.shortcode +
+                                        "', '" +
+                                        link.url +
+                                        "')\">" +
+                                        "Edit</button>" +
                                         '<button class="delete-btn" onclick="deleteLink(\'' +
                                         link.shortcode +
-                                        "')\">Delete</button>" +
+                                        "')\">" +
+                                        "Delete</button>" +
+                                        "</div>" +
                                         "</div>",
                                 )
                                 .join("");
@@ -210,6 +261,53 @@
                 }
             }
 
+            let isEditing = false;
+            let originalShortcode = null;
+
+            function editLink(shortcode, url) {
+                const shortcodeField = document.getElementById("shortcode");
+                const urlField = document.getElementById("url");
+                const saveBtn = document.getElementById("saveBtn");
+                const cancelBtn = document.getElementById("cancelBtn");
+
+                // Populate form with current values
+                shortcodeField.value = shortcode;
+                urlField.value = url;
+
+                // Set editing state
+                isEditing = true;
+                originalShortcode = shortcode;
+
+                // Update UI
+                saveBtn.textContent = "Update Link";
+                cancelBtn.style.display = "inline-block";
+                shortcodeField.focus();
+
+                // Scroll to form
+                document
+                    .querySelector(".container")
+                    .scrollIntoView({ behavior: "smooth" });
+            }
+
+            function cancelEdit() {
+                const shortcodeField = document.getElementById("shortcode");
+                const urlField = document.getElementById("url");
+                const saveBtn = document.getElementById("saveBtn");
+                const cancelBtn = document.getElementById("cancelBtn");
+
+                // Clear form
+                shortcodeField.value = "";
+                urlField.value = "";
+
+                // Reset editing state
+                isEditing = false;
+                originalShortcode = null;
+
+                // Update UI
+                saveBtn.textContent = "Add Link";
+                cancelBtn.style.display = "none";
+            }
+
             document
                 .getElementById("addForm")
                 .addEventListener("submit", function (e) {
@@ -218,22 +316,47 @@
                         document.getElementById("shortcode").value;
                     const url = document.getElementById("url").value;
 
-                    fetch("/api/links", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ shortcode, url }),
-                    })
-                        .then((response) => response.json())
-                        .then((data) => {
-                            if (data.success) {
-                                document.getElementById("shortcode").value = "";
-                                document.getElementById("url").value = "";
-                                loadLinks();
-                            } else {
-                                alert("Error: " + data.message);
-                            }
-                        });
+                    if (isEditing) {
+                        // Update existing link
+                        fetch("/api/links", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ shortcode, url }),
+                        })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                if (data.success) {
+                                    cancelEdit();
+                                    loadLinks();
+                                } else {
+                                    alert("Error: " + data.message);
+                                }
+                            });
+                    } else {
+                        // Add new link
+                        fetch("/api/links", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ shortcode, url }),
+                        })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                if (data.success) {
+                                    document.getElementById("shortcode").value =
+                                        "";
+                                    document.getElementById("url").value = "";
+                                    loadLinks();
+                                } else {
+                                    alert("Error: " + data.message);
+                                }
+                            });
+                    }
                 });
+
+            // Cancel button event listener
+            document
+                .getElementById("cancelBtn")
+                .addEventListener("click", cancelEdit);
 
             // Dark mode functionality
             const darkModeToggle = document.getElementById("darkModeToggle");
