@@ -59,6 +59,19 @@
     <body>
         <h1>Link Forwarder</h1>
 
+        {{if .ErrorMessage}}
+        <div
+            class="container"
+            style="
+                background: #f8d7da;
+                border: 1px solid #f5c6cb;
+                color: #721c24;
+            "
+        >
+            <p style="margin: 0">{{.ErrorMessage}}</p>
+        </div>
+        {{end}}
+
         <div class="container">
             <h2>Add New Link</h2>
             <form id="addForm">
@@ -66,6 +79,7 @@
                     type="text"
                     id="shortcode"
                     placeholder="Shortcode (e.g., google)"
+                    value="{{.Shortcode}}"
                     required
                 />
                 <input
@@ -155,6 +169,26 @@
 
             // Load links on page load
             loadLinks();
+
+            // Initialize form based on template data
+            document.addEventListener("DOMContentLoaded", function () {
+                const shortcodeField = document.getElementById("shortcode");
+                const urlField = document.getElementById("url");
+
+                // If shortcode is pre-populated, focus on URL field and clear URL params
+                if (shortcodeField.value.trim()) {
+                    urlField.focus();
+                    // Clear URL parameters to remove error message after showing it
+                    const url = new URL(window.location);
+                    url.searchParams.delete("shortcode");
+                    url.searchParams.delete("error");
+                    window.history.replaceState(
+                        {},
+                        document.title,
+                        url.pathname,
+                    );
+                }
+            });
         </script>
     </body>
 </html>

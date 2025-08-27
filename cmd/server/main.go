@@ -5,6 +5,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html/template"
 	"log"
@@ -138,7 +139,10 @@ func (lf *LinkForwarder) handleForward(w http.ResponseWriter, r *http.Request) {
 
 	url, err := lf.getURL(shortcode)
 	if err != nil {
-		http.Error(w, "Link not found", http.StatusNotFound)
+		// Redirect to home page with shortcode and error message
+		redirectURL := fmt.Sprintf("/?shortcode=%s&error=not_found", shortcode)
+		log.Printf("Link not found for shortcode: %s, redirecting to home", shortcode)
+		http.Redirect(w, r, redirectURL, http.StatusFound)
 		return
 	}
 
@@ -238,23 +242,69 @@ func (lf *LinkForwarder) handleAPI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type TemplateData struct {
+	Shortcode    string
+	ErrorMessage string
+}
+
 func (lf *LinkForwarder) handleHome(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("templates/home.html")
+	// Determine template path based on development mode
+	templatePath := "templates/home.html"
+	if isDevelopment() {
+		templatePath = "cmd/server/templates/home.html"
+	}
+
+	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		http.Error(w, "Failed to load template", http.StatusInternalServerError)
-		log.Printf("Template error: %v", err)
+		log.Printf("Template error: %v (tried path: %s)", err, templatePath)
 		return
 	}
 
+	// Get query parameters
+	shortcode := r.URL.Query().Get("shortcode")
+	errorType := r.URL.Query().Get("error")
+
+	var errorMessage string
+	if errorType == "not_found" {
+		errorMessage = fmt.Sprintf("Link '/%s' doesn't exist yet. You can create it below!", shortcode)
+	}
+
+	data := TemplateData{
+		Shortcode:    shortcode,
+		ErrorMessage: errorMessage,
+	}
+
 	w.Header().Set("Content-Type", "text/html")
-	if err := tmpl.Execute(w, nil); err != nil {
+	if err := tmpl.Execute(w, data); err != nil {
 		http.Error(w, "Failed to execute template", http.StatusInternalServerError)
 		log.Printf("Template execution error: %v", err)
 		return
 	}
 }
 
+var devMode bool
+
+func init() {
+	flag.BoolVar(&devMode, "dev", false, "Enable development mode")
+}
+
+func isDevelopment() bool {
+	// Check if explicitly set via flag
+	if devMode {
+		return true
+	}
+
+	// Auto-detect development mode by checking if we're running from source
+	if _, err := os.Stat("cmd/server/templates/home.html"); err == nil {
+		return true
+	}
+
+	return false
+}
+
 func main() {
+	flag.Parse()
 	lf, err := NewLinkForwarder()
 	if err != nil {
 		log.Fatal("Failed to initialize LinkForwarder:", err)
