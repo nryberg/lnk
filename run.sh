@@ -31,4 +31,4 @@ echo ""
 
 # Run the server
 export PORT=$PORT
-go run cmd/server/main.go
+go run -tags server cmd/server/main.go

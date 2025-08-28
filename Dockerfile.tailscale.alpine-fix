@@ -17,7 +17,7 @@ COPY . .
 ENV CGO_CFLAGS="-D_LARGEFILE64_SOURCE"
 # Select which main package to build (e.g., ./cmd/server or ./cmd/cli)
 ARG MAIN_PKG=./cmd/server
-ARG GO_BUILD_TAGS=
+ARG GO_BUILD_TAGS=server
 # Build (native arch), CGO enabled
 RUN CGO_ENABLED=1 go build -tags "$GO_BUILD_TAGS" -o /app/lnk $MAIN_PKG
 

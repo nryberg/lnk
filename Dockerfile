@@ -1,7 +1,7 @@
 FROM golang:1.21-alpine AS builder
 
 # Install build dependencies
-RUN apk add --no-cache gcc musl-dev sqlite-dev
+RUN apk add --no-cache build-base sqlite-dev ca-certificates
 
 # Set working directory
 WORKDIR /app
@@ -15,8 +15,11 @@ RUN go mod download
 # Copy source code
 COPY . .
 
+# Workaround for musl: expose large-file APIs used by sqlite amalgamation
+ENV CGO_CFLAGS="-D_LARGEFILE64_SOURCE"
+
 # Build the application
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o lnk ./cmd/server
+RUN CGO_ENABLED=1 GOOS=linux go build -tags server -a -installsuffix cgo -o lnk ./cmd/server
 
 # Final stage
 FROM alpine:latest

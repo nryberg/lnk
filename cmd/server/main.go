@@ -254,16 +254,25 @@ type TemplateData struct {
 }
 
 func (lf *LinkForwarder) handleHome(w http.ResponseWriter, r *http.Request) {
-	// Determine template path based on development mode
-	templatePath := "templates/home.html"
-	if isDevelopment() {
-		templatePath = "cmd/server/templates/home.html"
+	// Try multiple possible template paths
+	templatePaths := []string{
+		"templates/home.html",            // Docker/production path
+		"cmd/server/templates/home.html", // Development path
 	}
 
-	tmpl, err := template.ParseFiles(templatePath)
+	var tmpl *template.Template
+	var err error
+
+	for _, path := range templatePaths {
+		tmpl, err = template.ParseFiles(path)
+		if err == nil {
+			break
+		}
+	}
+
 	if err != nil {
 		http.Error(w, "Failed to load template", http.StatusInternalServerError)
-		log.Printf("Template error: %v (tried path: %s)", err, templatePath)
+		log.Printf("Template error: tried paths %v, last error: %v", templatePaths, err)
 		return
 	}
 
@@ -297,16 +306,7 @@ func init() {
 
 func isDevelopment() bool {
 	// Check if explicitly set via flag
-	if devMode {
-		return true
-	}
-
-	// Auto-detect development mode by checking if we're running from source
-	if _, err := os.Stat("cmd/server/templates/home.html"); err == nil {
-		return true
-	}
-
-	return false
+	return devMode
 }
 
 func main() {

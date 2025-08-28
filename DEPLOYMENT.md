@@ -8,13 +8,13 @@ The easiest way to run the application with persistent data is using Docker Comp
 
 ```bash
 # Build and start the application
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop the application
-docker-compose down
+docker compose down
 ```
 
 This will:
@@ -91,10 +91,10 @@ For local development without Docker:
 
 ```bash
 # Run directly with Go (data stored in .crush directory)
-PORT=8080 go run cmd/server/main.go
+PORT=8080 go run -tags server cmd/server/main.go
 
 # Or with explicit development flag
-PORT=8080 go run cmd/server/main.go -dev
+PORT=8080 go run -tags server cmd/server/main.go -dev
 ```
 
 ## Environment Variables
@@ -140,8 +140,9 @@ To upgrade to a new version:
 
 ```bash
 # With Docker Compose
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
+```
 
 # Manual Docker
 docker pull your-registry/lnk:latest
@@ -149,6 +150,7 @@ docker stop lnk
 docker rm lnk
 # Run with same volume mount as before
 docker run -d --name lnk -p 8080:8080 -v lnk_data:/data your-registry/lnk:latest
+```
 ```
 
 Your data will be preserved across upgrades as long as you use the same volume or host directory.
@@ -169,7 +171,7 @@ docker run --rm -v lnk_data:/data alpine ls -la /data/links.db
 
 ```bash
 # Docker Compose
-docker-compose logs -f
+docker compose logs -f
 
 # Manual Docker
 docker logs -f lnk
@@ -179,7 +181,7 @@ docker logs -f lnk
 
 ```bash
 # Docker Compose
-docker-compose exec lnk sh
+docker compose exec lnk sh
 
 # Manual Docker
 docker exec -it lnk sh
