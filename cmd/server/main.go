@@ -34,12 +34,18 @@ type Response struct {
 }
 
 func NewLinkForwarder() (*LinkForwarder, error) {
-	// Ensure .crush directory exists
-	if err := os.MkdirAll(".crush", 0755); err != nil {
-		return nil, fmt.Errorf("failed to create .crush directory: %v", err)
+	// Get data directory from environment variable, default to .crush
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		dataDir = ".crush"
 	}
 
-	dbPath := filepath.Join(".crush", "links.db")
+	// Ensure data directory exists
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create data directory %s: %v", dataDir, err)
+	}
+
+	dbPath := filepath.Join(dataDir, "links.db")
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)

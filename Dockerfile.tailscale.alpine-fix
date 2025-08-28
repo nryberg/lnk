@@ -41,17 +41,19 @@ WORKDIR /app
 COPY --from=builder /app/lnk /app/lnk
 COPY --from=builder /app/cmd/server/templates /app/templates
 
-# Create app user
+# Create app user and data directory
 RUN addgroup -S appuser && adduser -S -G appuser appuser && \
-    chown -R appuser:appuser /app
+    chown -R appuser:appuser /app && \
+    mkdir -p /data && chown appuser:appuser /data
 
-# Persist Tailscale state
+# Persist Tailscale state and app data
 RUN mkdir -p /var/lib/tailscale
-VOLUME ["/var/lib/tailscale"]
+VOLUME ["/var/lib/tailscale", "/data"]
 
 ENV TS_STATE_DIR=/var/lib/tailscale
 ENV TS_HOSTNAME="myapp"
 ENV TS_EXTRA_ARGS=""
+ENV DATA_DIR=/data
 
 EXPOSE 80
 

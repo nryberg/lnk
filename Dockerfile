@@ -34,8 +34,9 @@ WORKDIR /app
 COPY --from=builder /app/lnk .
 COPY --from=builder /app/cmd/server/templates ./templates
 
-# Create data directory
-RUN mkdir -p .crush && chown appuser:appuser .crush
+# Create data directory and set up volume
+RUN mkdir -p /data && chown appuser:appuser /data
+VOLUME ["/data"]
 
 # Switch to non-root user
 USER appuser
@@ -45,6 +46,7 @@ EXPOSE 8080
 
 # Set environment variables
 ENV PORT=8080
+ENV DATA_DIR=/data
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
