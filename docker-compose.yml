@@ -2,11 +2,11 @@ services:
   lnk:
     build: .
     ports:
-      - "8080:8080"
+      - "80:80"
     volumes:
       - lnk_data:/data
     environment:
-      - PORT=8080
+      - PORT=80
       - DATA_DIR=/data
     restart: unless-stopped
     healthcheck:
@@ -17,7 +17,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:8080/",
+          "http://localhost:80/",
         ]
       interval: 30s
       timeout: 3s

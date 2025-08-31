@@ -39,7 +39,7 @@ build:
 run:
 	@echo "🚀 Starting Link Forwarder with Docker Compose..."
 	COMPOSE_BAKE=true docker compose up -d
-	@echo "✅ Started! Visit http://localhost:8080"
+	@echo "✅ Started! Visit http://localhost:80"
 
 stop:
 	@echo "🛑 Stopping containers..."

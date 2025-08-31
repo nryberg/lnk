@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Link Forwarder - Simple Test</title>
+</head>
+<body>
+    <h1>Link Forwarder Test</h1>
+    <p>This is a simple test template.</p>
+
+    {{if .ErrorMessage}}
+    <div style="background: #f8d7da; padding: 10px; margin: 10px 0;">
+        <p>{{.ErrorMessage}}</p>
+    </div>
+    {{end}}
+
+    <form>
+        <input type="text" placeholder="Shortcode" value="{{.Shortcode}}">
+        <input type="text" placeholder="URL">
+        <button type="submit">Add Link</button>
+    </form>
+
+    <p>If you can see this, the template is working correctly.</p>
+</body>
+</html>

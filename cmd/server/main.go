@@ -138,7 +138,10 @@ func (lf *LinkForwarder) handleForward(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	shortcode := vars["shortcode"]
 
+	log.Printf("handleForward called for path: %s, shortcode: '%s'", r.URL.Path, shortcode)
+
 	if shortcode == "" {
+		log.Printf("Empty shortcode received, sending error")
 		http.Error(w, "Shortcode is required", http.StatusBadRequest)
 		return
 	}
@@ -254,7 +257,9 @@ type TemplateData struct {
 }
 
 func (lf *LinkForwarder) handleHome(w http.ResponseWriter, r *http.Request) {
-	// Try multiple possible template paths
+	log.Printf("handleHome called for path: %s", r.URL.Path)
+
+	// Try multiple possible template paths - using home template
 	templatePaths := []string{
 		"templates/home.html",            // Docker/production path
 		"cmd/server/templates/home.html", // Development path
@@ -276,6 +281,8 @@ func (lf *LinkForwarder) handleHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Template loaded successfully")
+
 	// Get query parameters
 	shortcode := r.URL.Query().Get("shortcode")
 	errorType := r.URL.Query().Get("error")
@@ -291,11 +298,12 @@ func (lf *LinkForwarder) handleHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html")
+	log.Printf("Executing template with data: %+v", data)
 	if err := tmpl.Execute(w, data); err != nil {
-		http.Error(w, "Failed to execute template", http.StatusInternalServerError)
 		log.Printf("Template execution error: %v", err)
 		return
 	}
+	log.Printf("Template executed successfully")
 }
 
 var devMode bool
