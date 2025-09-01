@@ -78,6 +78,9 @@
             body.dark-mode .shortcode {
                 color: #66b3ff;
             }
+            body.dark-mode .shortcode a {
+                color: inherit;
+            }
             body.dark-mode .url {
                 color: #ccc;
             }
@@ -150,6 +153,13 @@
             .shortcode {
                 font-weight: bold;
                 color: #007bff;
+            }
+            .shortcode a {
+                color: inherit;
+                text-decoration: none;
+            }
+            .shortcode a:hover {
+                text-decoration: underline;
             }
             .url {
                 color: #666;
@@ -225,9 +235,11 @@
                                     (link) =>
                                         '<div class="link-item">' +
                                         "<div>" +
-                                        '<div class="shortcode">/' +
+                                        '<div class="shortcode"><a href="/' +
                                         link.shortcode +
-                                        "</div>" +
+                                        '" target="_blank">/' +
+                                        link.shortcode +
+                                        "</a></div>" +
                                         '<div class="url">' +
                                         link.url +
                                         "</div>" +

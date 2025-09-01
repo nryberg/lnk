@@ -331,6 +331,12 @@ func main() {
 
 	r := mux.NewRouter()
 
+	// Static files (favicon, etc.)
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("templates/static/"))))
+	r.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "templates/static/favicon.ico")
+	})
+
 	// Home page with management interface
 	r.HandleFunc("/", lf.handleHome).Methods("GET")
 
