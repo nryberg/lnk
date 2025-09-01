@@ -1,4 +1,9 @@
-.PHONY: help build run dev stop clean logs shell backup restore
+.PHONY: help build run dev stop clean logs shell backup restore deploy deploy-files deploy-run status-remote logs-remote restart-remote tailscale-status
+
+# Configuration for remote deployment
+REMOTE_HOST ?= your-server.com
+REMOTE_USER ?= lnkuser
+REMOTE_DIR ?= ~/lnk
 
 # Default target
 help:
@@ -8,7 +13,7 @@ help:
 	@echo "  dev        - Run in development mode"
 	@echo "  test       - Run tests"
 	@echo ""
-	@echo "Docker:"
+	@echo "Local Docker:"
 	@echo "  build      - Build Docker image"
 	@echo "  run        - Start with Docker Compose"
 	@echo "  stop       - Stop Docker containers"
@@ -16,10 +21,26 @@ help:
 	@echo "  logs       - View logs"
 	@echo "  shell      - Access container shell"
 	@echo ""
+	@echo "Remote Deployment:"
+	@echo "  deploy     - Full deploy to remote server (files + run)"
+	@echo "  deploy-files - Copy files to remote server"
+	@echo "  deploy-run - Build and run on remote server"
+	@echo "  status-remote - Check remote container status"
+	@echo "  logs-remote - View remote logs"
+	@echo "  restart-remote - Restart remote containers"
+	@echo ""
+	@echo "Tailscale:"
+	@echo "  tailscale-status - Show Tailscale status"
+	@echo ""
 	@echo "Data Management:"
 	@echo "  backup     - Backup data volume"
 	@echo "  restore    - Restore data from backup"
 	@echo "  clean      - Clean up containers and images"
+	@echo ""
+	@echo "Configuration:"
+	@echo "  REMOTE_HOST=$(REMOTE_HOST)"
+	@echo "  REMOTE_USER=$(REMOTE_USER)"
+	@echo "  REMOTE_DIR=$(REMOTE_DIR)"
 	@echo ""
 
 # Development
@@ -75,10 +96,52 @@ clean:
 	docker system prune -f
 	@echo "✅ Cleanup complete"
 
+# Remote deployment
+deploy: deploy-files deploy-run
+	@echo "🚀 Full deployment complete!"
+
+deploy-files:
+	@echo "📂 Copying files to remote server..."
+	@echo "Creating remote directory..."
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "mkdir -p $(REMOTE_DIR)"
+	@echo "Copying project files..."
+	@rsync -avz --exclude='.git' --exclude='backups' --exclude='.crush' \
+		--exclude='*.log' --exclude='node_modules' \
+		./ $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/
+	@echo "✅ Files deployed to $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)"
+
+deploy-run:
+	@echo "🏗️ Building and running on remote server..."
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && make stop && make run"
+	@echo "✅ Application deployed and running!"
+	@echo "Check status with: make status-remote"
+
+status-remote:
+	@echo "📊 Remote Container Status:"
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && docker compose ps"
+
+logs-remote:
+	@echo "📋 Remote logs (Ctrl+C to exit)..."
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && docker compose logs -f"
+
+restart-remote:
+	@echo "🔄 Restarting remote containers..."
+	@ssh $(REMOTE_USER)@$(REMOTE_HOST) "cd $(REMOTE_DIR) && docker compose restart"
+
+# Tailscale management
+tailscale-status:
+	@echo "🔗 Tailscale Status:"
+	@docker compose exec -T lnk tailscale status 2>/dev/null || echo "Container not running or Tailscale not available"
+	@echo ""
+	@echo "🌐 Tailscale IP:"
+	@docker compose exec -T lnk tailscale ip -4 2>/dev/null || echo "Container not running or Tailscale not available"
+
 # Quick status check
 status:
-	@echo "📊 Container Status:"
+	@echo "📊 Local Container Status:"
 	@docker compose ps
 	@echo ""
 	@echo "💾 Volume Info:"
 	@docker volume ls | grep lnk || echo "No volumes found"
+	@echo ""
+	@make tailscale-status

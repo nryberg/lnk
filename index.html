@@ -1,0 +1,399 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Link Forwarder</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .container {
+                background: #f5f5f5;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+            }
+            .dark-mode-toggle {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 14px;
+            }
+            .toggle-switch {
+                position: relative;
+                width: 50px;
+                height: 24px;
+                background: #ccc;
+                border-radius: 24px;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+            .toggle-switch::before {
+                content: "";
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 20px;
+                height: 20px;
+                background: white;
+                border-radius: 50%;
+                transition: transform 0.3s;
+            }
+            .toggle-switch.active {
+                background: #007bff;
+            }
+            .toggle-switch.active::before {
+                transform: translateX(26px);
+            }
+             
+            body.dark-mode {
+                background: #1a1a1a;
+                color: #e0e0e0;
+            }
+            body.dark-mode .container {
+                background: #2d2d2d;
+                border: 1px solid #444;
+            }
+            body.dark-mode input {
+                background: #333;
+                color: #e0e0e0;
+                border: 1px solid #555;
+            }
+            body.dark-mode input::placeholder {
+                color: #aaa;
+            }
+            body.dark-mode .link-item {
+                background: #333;
+                border: 1px solid #444;
+            }
+            body.dark-mode .shortcode {
+                color: #66b3ff;
+            }
+            body.dark-mode .url {
+                color: #ccc;
+            }
+            .edit-btn {
+                background: #ffc107;
+                color: black;
+                padding: 5px 10px;
+                font-size: 12px;
+                margin-right: 5px;
+            }
+            .edit-btn:hover {
+                background: #e0a800;
+            }
+            body.dark-mode .edit-btn {
+                background: #ffc107;
+            }
+            body.dark-mode .edit-btn:hover {
+                background: #e0a800;
+            }
+            .form-actions {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+            .cancel-btn {
+                background: #6c757d;
+                color: white;
+                padding: 10px;
+                margin: 5px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .cancel-btn:hover {
+                background: #5a6268;
+            }
+            input,
+            button {
+                padding: 10px;
+                margin: 5px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+            button {
+                background: #007bff;
+                color: white;
+                cursor: pointer;
+            }
+            button:hover {
+                background: #0056b3;
+            }
+            .link-item {
+                background: white;
+                padding: 15px;
+                margin: 10px 0;
+                border-radius: 4px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .delete-btn {
+                background: #dc3545;
+                color: black;
+                padding: 5px 10px;
+                font-size: 12px;
+            }
+            .delete-btn:hover {
+                background: #c82333;
+            }
+            .shortcode {
+                font-weight: bold;
+                color: #007bff;
+            }
+            .url {
+                color: #666;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="dark-mode-toggle">
+            <span>&#x1F319;</span>
+            <div class="toggle-switch" id="darkModeToggle"></div>
+            <span>&#x2600;&#xFE0F;</span>
+        </div>
+
+        <h1>&#x1F517; Link Forwarder</h1>
+
+        
+
+        <div class="container">
+            <h2>Add New Link</h2>
+            <form id="addForm">
+                <input
+                    type="text"
+                    id="shortcode"
+                    placeholder="Shortcode (e.g., google)"
+                    value=""
+                    required
+                />
+                <input
+                    type="text"
+                    id="url"
+                    placeholder="URL (e.g., www.google.com)"
+                    required
+                />
+                <div class="form-actions">
+                    <button type="submit" id="saveBtn">Add Link</button>
+                    <button
+                        type="button"
+                        id="cancelBtn"
+                        class="cancel-btn"
+                        style="display: none"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="container">
+            <h2>Existing Links</h2>
+            <div id="links"></div>
+        </div>
+
+        <script>
+            function loadLinks() {
+                fetch("/api/links")
+                    .then((response) => response.json())
+                    .then((data) => {
+                        const linksDiv = document.getElementById("links");
+                        if (data.success && data.data) {
+                            linksDiv.innerHTML = data.data
+                                .map(
+                                    (link) =>
+                                        '<div class="link-item">' +
+                                        "<div>" +
+                                        '<div class="shortcode">/' +
+                                        link.shortcode +
+                                        "</div>" +
+                                        '<div class="url">' +
+                                        link.url +
+                                        "</div>" +
+                                        "</div>" +
+                                        "<div>" +
+                                        '<button class="edit-btn" onclick="editLink(\'' +
+                                        link.shortcode +
+                                        "', '" +
+                                        link.url +
+                                        "')\">" +
+                                        "Edit</button>" +
+                                        '<button class="delete-btn" onclick="deleteLink(\'' +
+                                        link.shortcode +
+                                        "')\">" +
+                                        "Delete</button>" +
+                                        "</div>" +
+                                        "</div>",
+                                )
+                                .join("");
+                        } else {
+                            linksDiv.innerHTML = "<p>No links found</p>";
+                        }
+                    });
+            }
+
+            function deleteLink(shortcode) {
+                if (confirm("Delete link: " + shortcode + "?")) {
+                    fetch("/api/links/" + shortcode, { method: "DELETE" })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            if (data.success) {
+                                loadLinks();
+                            } else {
+                                alert("Error: " + data.message);
+                            }
+                        });
+                }
+            }
+
+            let isEditing = false;
+            let originalShortcode = null;
+
+            function editLink(shortcode, url) {
+                const shortcodeField = document.getElementById("shortcode");
+                const urlField = document.getElementById("url");
+                const saveBtn = document.getElementById("saveBtn");
+                const cancelBtn = document.getElementById("cancelBtn");
+
+                
+                shortcodeField.value = shortcode;
+                urlField.value = url;
+
+                
+                isEditing = true;
+                originalShortcode = shortcode;
+
+                
+                saveBtn.textContent = "Update Link";
+                cancelBtn.style.display = "inline-block";
+                shortcodeField.focus();
+
+                
+                document
+                    .querySelector(".container")
+                    .scrollIntoView({ behavior: "smooth" });
+            }
+
+            function cancelEdit() {
+                const shortcodeField = document.getElementById("shortcode");
+                const urlField = document.getElementById("url");
+                const saveBtn = document.getElementById("saveBtn");
+                const cancelBtn = document.getElementById("cancelBtn");
+
+                
+                shortcodeField.value = "";
+                urlField.value = "";
+
+                
+                isEditing = false;
+                originalShortcode = null;
+
+                
+                saveBtn.textContent = "Add Link";
+                cancelBtn.style.display = "none";
+            }
+
+            document
+                .getElementById("addForm")
+                .addEventListener("submit", function (e) {
+                    e.preventDefault();
+                    const shortcode =
+                        document.getElementById("shortcode").value;
+                    const url = document.getElementById("url").value;
+
+                    if (isEditing) {
+                        
+                        fetch("/api/links", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ shortcode, url }),
+                        })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                if (data.success) {
+                                    cancelEdit();
+                                    loadLinks();
+                                } else {
+                                    alert("Error: " + data.message);
+                                }
+                            });
+                    } else {
+                        
+                        fetch("/api/links", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ shortcode, url }),
+                        })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                if (data.success) {
+                                    document.getElementById("shortcode").value =
+                                        "";
+                                    document.getElementById("url").value = "";
+                                    loadLinks();
+                                } else {
+                                    alert("Error: " + data.message);
+                                }
+                            });
+                    }
+                });
+
+            
+            document
+                .getElementById("cancelBtn")
+                .addEventListener("click", cancelEdit);
+
+            
+            const darkModeToggle = document.getElementById("darkModeToggle");
+            const body = document.body;
+
+            
+            const isDarkMode = localStorage.getItem("darkMode") === "true";
+            if (isDarkMode) {
+                body.classList.add("dark-mode");
+                darkModeToggle.classList.add("active");
+            }
+
+            
+            darkModeToggle.addEventListener("click", function () {
+                body.classList.toggle("dark-mode");
+                darkModeToggle.classList.toggle("active");
+
+                
+                localStorage.setItem(
+                    "darkMode",
+                    body.classList.contains("dark-mode"),
+                );
+            });
+
+            
+            loadLinks();
+
+            
+            document.addEventListener("DOMContentLoaded", function () {
+                const shortcodeField = document.getElementById("shortcode");
+                const urlField = document.getElementById("url");
+
+                
+                if (shortcodeField.value.trim()) {
+                    urlField.focus();
+                    
+                    const url = new URL(window.location);
+                    url.searchParams.delete("shortcode");
+                    url.searchParams.delete("error");
+                    window.history.replaceState(
+                        {},
+                        document.title,
+                        url.pathname,
+                    );
+                }
+            });
+        </script>
+    </body>
+</html>
