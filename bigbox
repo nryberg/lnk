@@ -1,0 +1,25 @@
+# Tailscale Configuration
+# Copy this file to .env and fill in your actual values
+
+# Tailscale Auth Key (required for first-time setup)
+# Get this from: https://login.tailscale.com/admin/settings/keys
+TS_AUTHKEY=tskey-auth-kC7seBHVyb11CNTRL-qffEJYbeLWG4BXhYArwNWGmFpoabgE3Ua
+
+# Tailscale Hostname (optional, defaults to lnk-server)
+TS_HOSTNAME=lnk
+
+# Additional Tailscale arguments (optional)
+# Common options:
+#   --ssh                    Enable SSH access
+#   --advertise-tags=tag:web Advertise with tags
+#   --accept-routes          Accept subnet routes
+TS_EXTRA_ARGS=--ssh
+
+# Tailscale TUN mode (optional, defaults to userspace-networking)
+# Options: "tun" or "userspace-networking"
+# Use "userspace-networking" if you don't have TUN device access
+TS_TUN_MODE=userspace-networking
+
+# Application Configuration
+PORT=80
+DATA_DIR=/data
