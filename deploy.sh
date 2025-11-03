@@ -111,7 +111,7 @@ TS_EXTRA_ARGS=${TS_EXTRA_ARGS:---ssh --accept-dns=false}
 TS_TUN_MODE=${TS_TUN_MODE:-userspace-networking}
 
 # Application Configuration
-PORT=${APP_PORT:-80}
+APP_PORT=${APP_PORT:-80}
 DATA_DIR=/data
 
 # Environment
